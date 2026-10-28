@@ -342,13 +342,15 @@ async def stage_groundedness(
 
 async def run_full_pipeline(session: AsyncSession, dataset_id: int) -> dict[str, Any]:
     stages: dict[str, Any] = {}
-    for name, func in (
+    # 变量名不能叫 func：本模块用 sqlalchemy.func 做聚合，
+    # 同名会让后续在同一函数里写 func.count() 时静默变成局部变量。
+    for name, stage_fn in (
         ("clean", stage_clean),
         ("dedup", stage_dedup),
         ("label", stage_label),
         ("qc", stage_qc),
     ):
-        stages[name] = await func(session, dataset_id)
+        stages[name] = await stage_fn(session, dataset_id)
         logger.info("数据流水线阶段完成 dataset=%s stage=%s", dataset_id, name)
     stages["stats"] = await dataset_stats(session, dataset_id)
     return stages

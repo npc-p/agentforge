@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession

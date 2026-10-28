@@ -91,7 +91,7 @@ def dedup_batch(samples: list[Sample], threshold: int = _DEFAULT_THRESHOLD) -> t
             continue
         seen_exact[key] = len(kept)
 
-        is_dup, fingerprint, hit = deduper.add(sample.prompt_text + sample.output)
+        is_dup, fingerprint, _doc_id = deduper.add(sample.prompt_text + sample.output)
         if is_dup:
             duplicates += 1
             continue

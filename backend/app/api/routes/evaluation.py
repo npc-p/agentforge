@@ -11,7 +11,7 @@ from app.core.exceptions import NotFoundError, ValidationError
 from app.core.response import ok
 from app.evaluation import runner
 from app.models.evaluation import EvalCase, EvalRun, EvalSuite
-from app.schemas.eval import CaseIn, CasesIngest, RunRequest, SuiteCreate
+from app.schemas.eval import CasesIngest, RunRequest, SuiteCreate
 
 router = APIRouter(tags=["evaluation"])
 

@@ -14,7 +14,7 @@ import pytest
 from app.agent.planner import parse_plan
 from app.evaluation.metrics import aggregate, answer_scores, retrieval_scores
 from app.pipeline.base import Sample
-from app.pipeline.cleaner import clean_batch, clean_sample, drop_reason, normalize_text
+from app.pipeline.cleaner import clean_batch, drop_reason, normalize_text
 from app.pipeline.dedup import Deduper, hamming, simhash, simhash_hex
 from app.pipeline.exporter import build_record, export_samples
 from app.pipeline.qc import DEFAULT_RULES, run_qc

@@ -14,7 +14,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, get_type_hints
 
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
 
 from app.core.exceptions import AppError, ValidationError as AppValidationError
