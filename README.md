@@ -1,5 +1,9 @@
 # AgentForge · 智能体研发平台
 
+[![Tests](https://github.com/npc-p/agentforge/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/npc-p/agentforge/actions/workflows/backend-tests.yml)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 面向「AI 智能体（Agent）研发」岗位能力模型的全栈工程实现：**Agent 状态机 + 工具调用 + RAG 混合检索 + 训练数据流水线 + 评测体系 + 可观测性**。
 
 后端 FastAPI + MySQL 8 + Chroma + BGE-M3 + DeepSeek，前端 Next.js + Tailwind，**100 条自动化测试全绿 / 覆盖率 75%**。
