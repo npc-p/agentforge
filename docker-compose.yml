@@ -1,0 +1,89 @@
+# 一条命令启动：docker compose up -d
+#
+# 首次启动会做三件事（都在 backend 容器入口里完成）：
+#   1. 下载 BGE-M3 向量模型（约 2.2 GB，失败自动降级为 hashing）
+#   2. 建表 + 灌演示数据（幂等，重复启动不会重复写）
+#   3. 启动 API
+name: agentforge
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: agentforge-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-agentforge}
+      MYSQL_DATABASE: agentforge
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./deploy/mysql-init.sql:/docker-entrypoint-initdb.d/10-readonly.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        # 0 = 不装 torch，配合 EMBED_PROVIDER=hashing 得到轻量镜像（约 500 MB）
+        WITH_LOCAL_EMBED: ${WITH_LOCAL_EMBED:-1}
+    container_name: agentforge-backend
+    environment:
+      ENV: dev
+      DEBUG: "false"
+      DATABASE_URL: mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-agentforge}@mysql:3306/agentforge?charset=utf8mb4
+      READONLY_DATABASE_URL: mysql+aiomysql://agentforge_ro:agentforge_ro_2026@mysql:3306/agentforge?charset=utf8mb4
+      # 填了就是真实模型，不填自动降级为确定性 Mock（界面仍可点，回答是模板）
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      EMBED_PROVIDER: ${EMBED_PROVIDER:-bge-m3}
+      EMBED_MODEL_PATH: /app/data/models/bge-m3
+      CHROMA_DIR: /app/data/chroma
+      LOG_FORMAT: json
+      # 设为 1 可跳过演示数据初始化
+      SKIP_SEED: ${SKIP_SEED:-0}
+    volumes:
+      - model_data:/app/data/models
+      - chroma_data:/app/data/chroma
+      - upload_data:/app/data/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8010}:8010"
+    # 首次启动要下 2.2 GB 模型，给足 start_period，否则容器会在下载期间被判 unhealthy，
+    # 连带 frontend 因为 depends_on: service_healthy 而拒绝启动。
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8010/api/system/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 300s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # 必须构建时传入：rewrites 的目标地址会写进构建产物
+        BACKEND_ORIGIN: http://backend:8010
+    container_name: agentforge-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  model_data:
+  chroma_data:
+  upload_data:

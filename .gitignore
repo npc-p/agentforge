@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# 环境与密钥
+.env
+.env.local
+*.key
+
+# 运行产物
+data/
+logs/
+*.log
+
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# 交付物（保留目录结构，忽略生成内容）
+docs/_generated/

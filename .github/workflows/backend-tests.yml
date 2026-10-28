@@ -1,0 +1,87 @@
+name: Tests
+
+# 先只开手动触发：CI 首跑要调 MySQL 服务与依赖版本，直接挂 push 容易一上来就红叉，
+# 那比没有 CI 更伤。等这次手动跑通、确认稳定后再打开 push / pull_request。
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
+
+jobs:
+  backend:
+    name: 后端测试（pytest）
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      # conftest 用这三个变量建独立库 agentforge_test（每次 DROP + CREATE）
+      TEST_MYSQL_HOST: 127.0.0.1
+      TEST_MYSQL_USER: root
+      TEST_MYSQL_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 安装依赖
+        working-directory: backend
+        env:
+          UV_SYSTEM_PYTHON: "1"
+        run: |
+          # 直接用 uv 读 pyproject.toml，避免在 CI 里另抄一份依赖清单造成漂移
+          uv pip install -r pyproject.toml
+          uv pip install pytest pytest-asyncio pytest-cov anyio
+
+      - name: 运行测试与覆盖率
+        working-directory: backend
+        # 测试固定 EMBED_PROVIDER=hashing（见 conftest），无需下载 2.2G 向量模型
+        run: pytest tests -q --cov=app --cov-report=term
+
+  frontend:
+    name: 前端构建（next build）
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装依赖
+        working-directory: frontend
+        run: npm ci
+
+      - name: 类型检查
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: 构建
+        working-directory: frontend
+        run: npm run build
+
+      - name: 断线识别回归
+        working-directory: frontend
+        run: node --experimental-strip-types scripts/verify-stream.mts

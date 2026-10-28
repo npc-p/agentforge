@@ -1,0 +1,10 @@
+# 这几条直接决定镜像大小：data/ 里可能有 2.2 GB 模型与向量库
+.venv/
+data/
+tests/
+.env
+.coverage
+htmlcov/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
