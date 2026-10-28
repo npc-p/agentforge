@@ -235,7 +235,8 @@ curl -s localhost:8010/api/knowledge/bases | head -c 200
 - **默认已用本地 BGE-M3**（1024 维，CPU 推理）：检索评测 hit_rate 1.0 / MRR 0.9。代价是单次检索 4 ms → 57 ms、内存占用 2.2 GB（启动时后台预热，首问实测 0.3 s）。需要极致轻量时可切回 `EMBED_PROVIDER=hashing`；
 - Chroma 单进程写锁，不适合多副本部署；
 - 文档入库为同步阻塞，大文件并发上传时请求耗时会拉长；
-- **CI 已提供但未在 GitHub 上实跑**：`.github/workflows/backend-tests.yml` 配置了 MySQL 服务容器 +
-  后端 pytest + 前端构建，触发方式暂为手动（`workflow_dispatch`），跑通后再打开 push/PR 触发。
+- **CI 已实跑通过**：`.github/workflows/backend-tests.yml` 走 MySQL 服务容器 + 后端 pytest（103 条）+
+  前端构建，单次约 55 秒，push/PR 自动触发。CI 里不装 torch（测试固定 `EMBED_PROVIDER=hashing`），
+  所以跑得动。
 
 **已做的安全边界**：`sql_query` 工具使用独立只读账号（`agentforge_ro`，仅本库 SELECT），并叠加由 ORM 元数据生成的表名白名单；无证据时（工具全部失败且无检索引用）走硬闸门返回固定话术，不调用模型生成。
